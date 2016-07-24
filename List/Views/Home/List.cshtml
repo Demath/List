@@ -1,0 +1,165 @@
+﻿@{
+    ViewBag.Title = "List";
+
+    Layout = "~/Views/Shared/_Layout.cshtml";
+
+    AjaxOptions ajOpts1 = new AjaxOptions {
+        UpdateTargetId = "tableBody",
+        OnSuccess = "processData1"
+    };
+
+    AjaxOptions ajOpts2 = new AjaxOptions {
+        UpdateTargetId = "tableBody",
+        OnSuccess = "processData2"
+    };
+}
+
+<script type="text/javascript">
+
+    // when data is added 
+    function processData1(data) {
+        // clearing old data in the table
+        var tableBody = $("#tableBody");
+        tableBody.empty();
+        // appending new ones and inserting of each their id value into following array
+        var eachid = [];
+        for (var i = 0; i < data.length; i++) {
+            tableBody.append("<tr id='" + data[i].InputInfoId + "'><td>" + data[i].Text + "</td></tr>");
+            eachid[i] = data[i].InputInfoId;
+        }
+        // specifying current position of active row
+        var indexer = eachid.length - 1;
+        localStorage.setItem("indexer", indexer);
+        localStorage.setItem("eachid", JSON.stringify(eachid));
+        // specifying current info id for removing and active row
+        $("#deleteid").attr("value", eachid[indexer]);
+        var s = "#" + eachid[indexer];
+        $(s).addClass("active");
+        // clear textarea
+        $("#Text").val("");
+    }
+
+    // when data is removed
+    function processData2(data) {
+        var tableBody = $("#tableBody");
+        tableBody.empty();
+        var eachid = [];
+        for (var i = 0; i < data.length; i++) {
+            tableBody.append("<tr id='" + data[i].InputInfoId + "'><td>" + data[i].Text + "</td></tr>");
+            eachid[i] = data[i].InputInfoId;
+        }
+        var indexer = localStorage.getItem("indexer") - 1;
+        localStorage.setItem("indexer", indexer);
+        localStorage.setItem("eachid", JSON.stringify(eachid));
+        $("#deleteid").attr("value", eachid[indexer]);
+        var s = "#" + eachid[indexer];
+        $(s).addClass("active");
+    }
+
+    $(document).ready(function () {
+        // appending new rows and inserting each their id value into following array
+        var eachid = [];
+        var target = $("#tableBody").children();
+        target.each(function (index, element) { eachid[index] = $(target[index]).attr("id"); });
+        localStorage.setItem("eachid", JSON.stringify(eachid));
+        // specifying current position of active row
+        var indexer;
+        if (!localStorage.getItem("indexer"))
+            indexer = 0;
+        else
+            indexer = localStorage.getItem("indexer");
+        localStorage.setItem("indexer", indexer);
+        // specifying info id for removing
+        $("#deleteid").attr("value", eachid[indexer]);
+        var s = "#" + eachid[indexer];
+        $(s).addClass("active");
+
+        // define event for button "arrow-down"
+        $("#down").click(function () {
+            eachid = JSON.parse(localStorage.getItem("eachid"));
+            indexer = localStorage.getItem("indexer");
+            var s = "#" + eachid[indexer];
+            $(s).removeClass("active");
+            if (indexer < eachid.length - 1) {
+                indexer++;
+                localStorage.setItem("indexer", indexer);
+            }
+            $("#deleteid").attr("value", eachid[indexer]);
+            s = "#" + eachid[indexer];
+            $(s).addClass("active");
+        });
+
+        // define event for button "arrow-up"
+        $("#up").click(function () {
+            eachid = JSON.parse(localStorage.getItem("eachid"));
+            indexer = JSON.parse(localStorage.getItem("indexer"));
+            s = "#" + eachid[indexer];
+            $(s).removeClass("active");
+            if (indexer > 0) {
+                indexer--;
+                localStorage.setItem("indexer", indexer);
+            }
+            $("#deleteid").attr("value", eachid[indexer]);
+            s = "#" + eachid[indexer];
+            $(s).addClass("active");
+        });
+
+        // save text in out textarea after reloading
+        var text = $("#Text");
+        if (!localStorage.getItem("text")) {
+            localStorage.setItem("text", "");
+        }
+        else {
+            text.val(localStorage.getItem("text"));
+        }
+        text.data('oldVal', text.val());
+        // Look for changes in the value
+        text.bind("propertychange change click keyup input paste", function (event) {
+            // If value has changed...
+            if (text.data('oldVal') != text.val()) {
+                // Updated stored value
+                text.data('oldVal', text.val());
+                // Do action
+                localStorage.setItem("text", text.val())
+            }
+        });
+    });
+</script>
+
+<div class="row">
+    <div class="col-lg-10">
+        <table class="table table-bordered">
+            <thead>
+                <tr class="danger">
+                    <th>Info</th>
+                </tr>
+            </thead>
+            <tbody id="tableBody">
+                @Html.Action("GetData")
+            </tbody>
+        </table>
+        <hr />
+        @using (Ajax.BeginForm("Add", "Home", ajOpts1)) {
+            @Html.Hidden("InputInfoId", 0)
+            <div class="form-group">
+                <label for="#Text"></label>
+                <textarea id="Text" name="Text" class="form-control" rows="5" placeholder="Add to Info..."></textarea>
+            </div>
+            <input id="addbutton" type="submit" value="Add" class="btn btn-default btn-default" />
+        }
+    </div>
+    <div class="col-lg-2">
+        <div data-spy="affix" data-offset-top="50">
+            @using (Ajax.BeginForm("Delete", "Home", ajOpts2)) {
+                <input id="deleteid" type="hidden" name="id" value="none" />
+                <div class="btn-group">
+                    <button id="up" type="button" class="btn btn-default btn-lg"><span class="glyphicon glyphicon-arrow-up"></span></button>
+                    <button id="down" type="button" class="btn btn-default btn-lg"><span class="glyphicon glyphicon-arrow-down"></span></button>
+                    <button type="submit" class="btn btn-default btn-lg"><span class="glyphicon glyphicon-remove"></span></button>
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+
